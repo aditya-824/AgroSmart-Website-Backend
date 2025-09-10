@@ -1,331 +1,342 @@
-<!--
-    Rui Santos
-    Complete project details at https://RandomNerdTutorials.com/esp32-web-bluetooth/
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files.
-    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-  -->
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <title>ESP32 Web BLE App</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: Roboto, sans-serif;
+            background-color: rgb(253, 253, 249);
+        }
+
+        .biggest-box {
+            text-align: center;
+        }
+
+        .big-box {
+            width: 237.6px;
+            height: 360px;
+            background-color: rgb(242, 245, 216);
+            border-radius: 12px;
+            padding: 10px;
+            margin: 40px 20px;
+            display: inline-block;
+            vertical-align: top;
+        }
+
+        .title-soil {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            margin-bottom: 10px;
+            margin-left: 20px;
+        }
+
+        .soil-moisture {
+            color: rgb(81, 81, 14);
+            font-size: 20px;
+            font-weight: bold;
+            margin-left: 7px;
+        }
+
+        .soil-img {
+            width: 40px;
+            height: 40px;
+            margin-right: 30px;
+        }
+
+        .little-box {
+            background-color: rgb(255, 255, 230);
+            width: 100%;
+            height: 190px;
+            border-radius: 8px;
+            margin-top: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .sensor-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: rgb(81, 81, 14);
+        }
+
+        #connectBleButton,
+        #disconnectBleButton,
+        #onButton,
+        #offButton {
+            display: inline-block;
+            margin: 10px;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 30px;
+            border: 2px solid rgb(81, 81, 14);
+            color: rgb(81, 81, 14);
+            background-color: rgb(254, 254, 248);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #bleState {
+            font-weight: bold;
+            margin-top: 15px;
+            display: block;
+        }
+
+        #valueSent {
+            color: rgb(81, 81, 14);
+            font-weight: bold;
+        }
+
+        .crop-box {
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px solid rgb(81, 81, 14);
+            border-radius: 10px;
+            display: inline-block;
+            background-color: rgb(254, 254, 248);
+        }
+
+        #cropSelect {
+            border-radius: 4px;
+            border-style: solid;
+            border-color: rgb(81, 81, 14);
+            color: rgb(81, 81, 14);
+            border-width: 1px;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>AgroSmart</h1>
-    <button id="connectBleButton">Connect to Module</button>
-    <button id="disconnectBleButton">Disconnect Module</button>
-    <p>BLE state: <strong><span id="bleState" style="color:#d13a30;">Disconnected</span></strong></p>
-    <h2>Temperature value:</h2>
-    <p><span id="dhtValueContainer">NaN</span></p>
-    <p>Last tempreature reading: <span id="dhtTimestamp"></span></p>
-    <h2>Soil Moisture Value</h2>
-    <p><span id="soilValueContainer">NaN</span></p>
-    <p>Last Soil reading: <span id="soilTimestamp"></span></p>
-    <h2>Water Level Value</h2>
-    <p><span id="waterValueContainer">NaN</span></p>
-    <p>Last Water reading: <span id="waterTimestamp"></span></p>
-    <h2>Control Water Pump</h2>
-    <button id="onButton">ON</button>
-    <button id="offButton">OFF</button>
-    <p>Last value sent: <span id="valueSent"></span></p>
-    <p><a href="https://randomnerdtutorials.com/">Created by RandomNerdTutorials.com</a></p>
-    <p><a href="https://RandomNerdTutorials.com/esp32-web-bluetooth/">Read the full project here.</a></p>
-        <h2>Send Crop Data</h2>
-        <label for="cropSelect">Select Crop:</label>
-        <select id="cropSelect">
-            <option value="Wheat">Wheat</option>
-            <option value="Rice">Rice</option>
-            <option value="Maize">Maize</option>
-            <option value="Barley">Barley</option>
-            <option value="Soybean">Soybean</option>
-            <option value="Cotton">Cotton</option>
-            <option value="Sugarcane">Sugarcane</option>
-            <option value="Potato">Potato</option>
-            <option value="Tomato">Tomato</option>
-            <option value="Onion">Onion</option>
-            <option value="Peanut">Peanut</option>
-            <option value="Chickpea">Chickpea</option>
-            <option value="Lentil">Lentil</option>
-            <option value="Mustard">Mustard</option>
-            <option value="Sunflower">Sunflower</option>
-            <option value="Sorghum">Sorghum</option>
-            <option value="Millet">Millet</option>
-            <option value="Groundnut">Groundnut</option>
-            <option value="Cabbage">Cabbage</option>
-            <option value="Cauliflower">Cauliflower</option>
-        </select>
-        <button id="sendCropDataButton">Send Crop Data</button>
-</body>
-<script>
-        // Crop data for 20 crops
-        const cropData = {
-            "Wheat": { temperature: 22, humidity: 60 },
-            "Rice": { temperature: 28, humidity: 80 },
-            "Maize": { temperature: 25, humidity: 65 },
-            "Barley": { temperature: 18, humidity: 55 },
-            "Soybean": { temperature: 27, humidity: 70 },
-            "Cotton": { temperature: 30, humidity: 60 },
-            "Sugarcane": { temperature: 32, humidity: 85 },
-            "Potato": { temperature: 17, humidity: 75 },
-            "Tomato": { temperature: 24, humidity: 70 },
-            "Onion": { temperature: 20, humidity: 65 },
-            "Peanut": { temperature: 26, humidity: 60 },
-            "Chickpea": { temperature: 21, humidity: 55 },
-            "Lentil": { temperature: 19, humidity: 50 },
-            "Mustard": { temperature: 16, humidity: 60 },
-            "Sunflower": { temperature: 23, humidity: 55 },
-            "Sorghum": { temperature: 29, humidity: 65 },
-            "Millet": { temperature: 27, humidity: 60 },
-            "Groundnut": { temperature: 25, humidity: 70 },
-            "Cabbage": { temperature: 18, humidity: 80 },
-            "Cauliflower": { temperature: 17, humidity: 75 }
-        };
+    <!-- Crop Selection -->
+    <div style="text-align:center;">
+        <div class="crop-box">
+            <h3>Select Crop</h3>
+            <select id="cropSelect">
+                <option value="">Choose a crop</option>
+                <option value="Rice">Rice</option>
+                <option value="Maize">Maize</option>
+                <option value="Wheat">Wheat</option>
+                <option value="Mustard">Mustard</option>
+                <option value="Large Cardamom">Large Cardamom</option>
+            </select>
+            <p id="cropInfo"></p>
+        </div>
+    </div>
 
-        // BLE crop characteristic UUIDs (define in ESP32 code)
-        var cropTemperatureCharacteristic = '83a7f460-3e8a-4382-b354-26dfd57c4fc5';
-        var cropHumidityCharacteristic = '83a7f460-3e8a-4382-b354-26dfd57c4fc5';
+    <!-- Sensor Data Boxes -->
+    <div class="biggest-box">
+        <div class="big-box">
+            <div class="title-soil">
+                <p class="soil-moisture">Soil Moisture</p>
+                <img class="soil-img" src="https://i.postimg.cc/jdvkN7gh/soilmoisture.png">
+            </div>
+            <div class="little-box">
+                <span class="sensor-value" id="soilValueContainer">NaN</span>
+            </div>
+            <p>Last Soil reading: <span id="soilTimestamp"></span></p>
+        </div>
 
-        // Crop selection and send logic
-        const cropSelect = document.getElementById('cropSelect');
-        const sendCropDataButton = document.getElementById('sendCropDataButton');
+        <div class="big-box">
+            <div class="title-soil">
+                <p class="soil-moisture">Temperature</p>
+                <img class="soil-img" src="https://i.postimg.cc/wjv4kjnY/temperature.png">
+            </div>
+            <div class="little-box">
+                <span class="sensor-value" id="dhtValueContainer">NaN</span>
+            </div>
+            <p>Last DHT11 reading: <span id="dhtTimestamp"></span></p>
+        </div>
 
-        sendCropDataButton.addEventListener('click', () => {
-            const selectedCrop = cropSelect.value;
-            const data = cropData[selectedCrop];
-            if (data && bleServer && bleServer.connected) {
-                const encoder = new TextEncoder();
-                // Send temperature
-                bleServiceFound.getCharacteristic(cropTemperatureCharacteristic)
-                    .then(characteristic => characteristic.writeValue(encoder.encode(String(data.temperature))))
-                    .then(() => {
-                        console.log("Crop temperature sent:", data.temperature);
-                        // Send humidity after temperature is sent
-                        return bleServiceFound.getCharacteristic(cropHumidityCharacteristic);
-                    })
-                    .then(characteristic => characteristic.writeValue(encoder.encode(String(data.humidity))))
-                    .then(() => {
-                        console.log("Crop humidity sent:", data.humidity);
-                    })
-                    .catch(error => {
-                        console.error("Error sending crop data:", error);
-                    });
-            } else {
-                window.alert("Bluetooth is not connected or crop data not found.");
-            }
+        <div class="big-box">
+            <div class="title-soil">
+                <p class="soil-moisture">Water Level</p>
+                <img class="soil-img" src="https://i.postimg.cc/85NgFqNs/water-level.png">
+            </div>
+            <div class="little-box">
+                <span class="sensor-value" id="waterValueContainer">NaN</span>
+            </div>
+            <p>Last Water level reading: <span id="waterTimestamp"></span></p>
+        </div>
+    </div>
+
+    <!-- BLE Controls -->
+    <div style="text-align:center;">
+        <button id="connectBleButton">Connect to BLE Device</button>
+        <button id="disconnectBleButton">Disconnect BLE Device</button>
+        <p>BLE state: <strong><span id="bleState" style="color:rgb(209,58,48);">Disconnected</span></strong></p>
+
+        <h2>Control GPIO 2</h2>
+        <button id="onButton">ON</button>
+        <button id="offButton">OFF</button>
+        <p>Last value sent: <span id="valueSent"></span></p>
+    </div>
+
+    <script>
+        // DOM Elements
+        const connectButton = document.getElementById('connectBleButton');
+        const disconnectButton = document.getElementById('disconnectBleButton');
+        const onButton = document.getElementById('onButton');
+        const offButton = document.getElementById('offButton');
+        const dhtValueContainer = document.getElementById('dhtValueContainer');
+        const soilValueContainer = document.getElementById('soilValueContainer');
+        const waterValueContainer = document.getElementById('waterValueContainer');
+        const latestValueSent = document.getElementById('valueSent');
+        const bleStateContainer = document.getElementById('bleState');
+        const dhtTimestampContainer = document.getElementById('dhtTimestamp');
+        const soilTimestampContainer = document.getElementById('soilTimestamp');
+        const waterTimestampContainer = document.getElementById('waterTimestamp');
+
+        // BLE Device Specs
+        var deviceName = 'ESP32';
+        var bleService = '796a9ae0-3d3b-4df9-9f5e-b2c9518d1401';
+        var ledCharacteristic = 'be27038d-b3ef-44cd-a643-9947c9bab495';
+        var dhtCharacteristic = '3cc918a8-ff40-455a-99cc-ec8a9f5581e6';
+        var soilCharacteristic = '378715fe-038b-41c2-b27b-20d6083d6908';
+        var waterCharacteristic = '2af6c2df-bc1d-4505-bf11-01e74b0761c6';
+
+        // BLE Globals
+        var bleServer;
+        var bleServiceFound;
+        var dhtCharacteristicFound;
+        var soilCharacteristicFound;
+        var waterCharacteristicFound;
+
+        connectButton.addEventListener('click', () => {
+            if (isWebBluetoothEnabled()) connectToDevice();
         });
-    // DOM Elements
-    const connectButton = document.getElementById('connectBleButton');
-    const disconnectButton = document.getElementById('disconnectBleButton');
-    const onButton = document.getElementById('onButton');
-    const offButton = document.getElementById('offButton');
-    const dhtValueContainer = document.getElementById('dhtValueContainer');
-    const soilValueContainer = document.getElementById('soilValueContainer');
-    const latestValueSent = document.getElementById('valueSent');
-    const bleStateContainer = document.getElementById('bleState');
-    const dhtTimestampContainer = document.getElementById('dhtTimestamp');
-    const soilTimestampContainer = document.getElementById('soilTimestamp');
-    const waterTimestampContainer = document.getElementById('waterTimestamp');
 
-    //Define BLE Device Specs
-    var deviceName = 'ESP32';
-    var bleService = '796a9ae0-3d3b-4df9-9f5e-b2c9518d1401';
-    var ledCharacteristic = 'be27038d-b3ef-44cd-a643-9947c9bab495';
-    var dhtCharacteristic = '3cc918a8-ff40-455a-99cc-ec8a9f5581e6';
-    var soilCharacteristic = '378715fe-038b-41c2-b27b-20d6083d6908';
-    var waterCharacteristic = '2af6c2df-bc1d-4505-bf11-01e74b0761c6';
+        disconnectButton.addEventListener('click', disconnectDevice);
+        onButton.addEventListener('click', () => writeOnCharacteristic(1));
+        offButton.addEventListener('click', () => writeOnCharacteristic(0));
 
-    //Global Variables to Handle Bluetooth
-    var bleServer;
-    var bleServiceFound;
-    var dhtCharacteristicFound;
-    var soilCharacteristicFound;
-    var waterCharacteristicFound;
-
-    // Connect Button (search for BLE Devices only if BLE is available)
-    connectButton.addEventListener('click', (event) => {
-        if (isWebBluetoothEnabled()) {
-            connectToDevice();
+        function isWebBluetoothEnabled() {
+            if (!navigator.bluetooth) {
+                bleStateContainer.innerHTML = "Web Bluetooth API is not available in this browser!";
+                return false;
+            }
+            return true;
         }
-    });
 
-    // Disconnect Button
-    disconnectButton.addEventListener('click', disconnectDevice);
-
-    // Write to the ESP32 LED Characteristic
-    onButton.addEventListener('click', () => writeOnCharacteristic(1));
-    offButton.addEventListener('click', () => writeOnCharacteristic(0));
-
-    // Check if BLE is available in your Browser
-    function isWebBluetoothEnabled() {
-        if (!navigator.bluetooth) {
-            console.log("Web Bluetooth API is not available in this browser!");
-            bleStateContainer.innerHTML = "Web Bluetooth API is not available in this browser!";
-            return false
-        }
-        console.log('Web Bluetooth API supported in this browser.');
-        return true
-    }
-
-    // Connect to BLE Device and Enable Notifications
-    function connectToDevice() {
-        console.log('Initializing Bluetooth...');
-        navigator.bluetooth.requestDevice({
-            filters: [{ name: deviceName }],
-            optionalServices: [bleService]
-        })
-            .then(device => {
-                console.log('Device Selected:', device.name);
-                bleStateContainer.innerHTML = 'Connected to device ' + device.name;
-                bleStateContainer.style.color = "#24af37";
-                device.addEventListener('gattservicedisconnected', onDisconnected);
-                return device.gatt.connect();
+        function connectToDevice() {
+            navigator.bluetooth.requestDevice({
+                filters: [{ name: deviceName }],
+                optionalServices: [bleService]
             })
-            .then(gattServer => {
-                bleServer = gattServer;
-                console.log("Connected to GATT Server");
-                return bleServer.getPrimaryService(bleService);
-            })
-            .then(service => {
-                bleServiceFound = service;
-                console.log("Service discovered:", service.uuid);
-                // Get both sensor characteristics
-                return Promise.all([
-                    service.getCharacteristic(dhtCharacteristic),
-                    service.getCharacteristic(soilCharacteristic),
-                    service.getCharacteristic(waterCharacteristic)
-                ]);
-            })
-            .then(characteristics => {
-                dhtCharacteristicFound = characteristics[0];
-                soilCharacteristicFound = characteristics[1];
-                waterCharacteristicFound = characteristics[2];
-
-                // DHT11 notifications
-                dhtCharacteristicFound.addEventListener('characteristicvaluechanged', handleDHTCharacteristicChange);
-                dhtCharacteristicFound.startNotifications();
-                dhtCharacteristicFound.readValue().then(value => {
-                    const decodedValue = new TextDecoder().decode(value);
-                    dhtValueContainer.innerHTML = decodedValue;
-                });
-
-                // Soil moisture notifications
-                soilCharacteristicFound.addEventListener('characteristicvaluechanged', handleSoilCharacteristicChange);
-                soilCharacteristicFound.startNotifications();
-                soilCharacteristicFound.readValue().then(value => {
-                    const decodedValue = new TextDecoder().decode(value);
-                    soilValueContainer.innerHTML = decodedValue;
-                });
-
-                // Water level notifications
-                waterCharacteristicFound.addEventListener('characteristicvaluechanged', handleWaterCharacteristicChange);
-                waterCharacteristicFound.startNotifications();
-                waterCharacteristicFound.readValue().then(value => {
-                    const decodedValue = new TextDecoder().decode(value);
-                    waterValueContainer.innerHTML = decodedValue;
-                });
-            })
-            .catch(error => {
-                console.log('Error: ', error);
-            })
-    }
-
-    function onDisconnected(event) {
-        console.log('Device Disconnected:', event.target.device.name);
-        bleStateContainer.innerHTML = "Device disconnected";
-        bleStateContainer.style.color = "#d13a30";
-
-        connectToDevice();
-    }
-
-    function handleDHTCharacteristicChange(event) {
-        const newValueReceived = new TextDecoder().decode(event.target.value);
-        console.log("DHT11 characteristic value changed: ", newValueReceived);
-        dhtValueContainer.innerHTML = newValueReceived;
-        dhtTimestampContainer.innerHTML = getDateTime();
-    }
-
-    function handleSoilCharacteristicChange(event) {
-        const newValueReceived = new TextDecoder().decode(event.target.value);
-        console.log("Soil characteristic value changed: ", newValueReceived);
-        soilValueContainer.innerHTML = newValueReceived;
-        soilTimestampContainer.innerHTML = getDateTime();
-    }
-
-    function handleWaterCharacteristicChange(event) {
-        const newValueReceived = new TextDecoder().decode(event.target.value);
-        console.log("Water characteristic value changed: ", newValueReceived);
-        waterValueContainer.innerHTML = newValueReceived;
-        waterTimestampContainer.innerHTML = getDateTime();
-    }
-
-    function writeOnCharacteristic(value) {
-        if (bleServer && bleServer.connected) {
-            bleServiceFound.getCharacteristic(ledCharacteristic)
-                .then(characteristic => {
-                    console.log("Found the LED characteristic: ", characteristic.uuid);
-                    const data = new Uint8Array([value]);
-                    return characteristic.writeValue(data);
+                .then(device => {
+                    bleStateContainer.innerHTML = 'Connected to device ' + device.name;
+                    bleStateContainer.style.color = "rgb(36,175,55)";
+                    device.addEventListener('gattservicedisconnected', onDisconnected);
+                    return device.gatt.connect();
                 })
-                .then(() => {
-                    latestValueSent.innerHTML = value;
-                    console.log("Value written to LEDcharacteristic:", value);
+                .then(gattServer => {
+                    bleServer = gattServer;
+                    return bleServer.getPrimaryService(bleService);
+                })
+                .then(service => {
+                    bleServiceFound = service;
+                    return Promise.all([
+                        service.getCharacteristic(dhtCharacteristic),
+                        service.getCharacteristic(soilCharacteristic),
+                        service.getCharacteristic(waterCharacteristic)
+                    ]);
+                })
+                .then(characteristics => {
+                    dhtCharacteristicFound = characteristics[0];
+                    soilCharacteristicFound = characteristics[1];
+                    waterCharacteristicFound = characteristics[2];
+
+                    dhtCharacteristicFound.addEventListener('characteristicvaluechanged', handleDHTCharacteristicChange);
+                    dhtCharacteristicFound.startNotifications();
+
+                    soilCharacteristicFound.addEventListener('characteristicvaluechanged', handleSoilCharacteristicChange);
+                    soilCharacteristicFound.startNotifications();
+
+                    waterCharacteristicFound.addEventListener('characteristicvaluechanged', handleWaterCharacteristicChange);
+                    waterCharacteristicFound.startNotifications();
                 })
                 .catch(error => {
-                    console.error("Error writing to the LED characteristic: ", error);
+                    console.log('Error:', error);
                 });
-        } else {
-            console.error("Bluetooth is not connected. Cannot write to characteristic.")
-            window.alert("Bluetooth is not connected. Cannot write to characteristic. \n Connect to BLE first!")
         }
-    }
 
-    function disconnectDevice() {
-        console.log("Disconnect Device.");
-        if (bleServer && bleServer.connected) {
-            if (sensorCharacteristicFound) {
-                sensorCharacteristicFound.stopNotifications()
-                    .then(() => {
-                        console.log("Notifications Stopped");
-                        return bleServer.disconnect();
+        function onDisconnected(event) {
+            bleStateContainer.innerHTML = "Device disconnected";
+            bleStateContainer.style.color = "rgb(209,58,48)";
+        }
+
+        function handleDHTCharacteristicChange(event) {
+            const newValue = new TextDecoder().decode(event.target.value);
+            dhtValueContainer.innerHTML = newValue;
+            dhtTimestampContainer.innerHTML = getDateTime();
+        }
+
+        function handleSoilCharacteristicChange(event) {
+            const newValue = new TextDecoder().decode(event.target.value);
+            soilValueContainer.innerHTML = newValue;
+            soilTimestampContainer.innerHTML = getDateTime();
+        }
+
+        function handleWaterCharacteristicChange(event) {
+            const newValue = new TextDecoder().decode(event.target.value);
+            waterValueContainer.innerHTML = newValue;
+            waterTimestampContainer.innerHTML = getDateTime();
+        }
+
+        function writeOnCharacteristic(value) {
+            if (bleServer && bleServer.connected) {
+                bleServiceFound.getCharacteristic(ledCharacteristic)
+                    .then(characteristic => {
+                        const data = new Uint8Array([value]);
+                        return characteristic.writeValue(data);
                     })
                     .then(() => {
-                        console.log("Device Disconnected");
-                        bleStateContainer.innerHTML = "Device Disconnected";
-                        bleStateContainer.style.color = "#d13a30";
-
+                        latestValueSent.innerHTML = value;
                     })
                     .catch(error => {
-                        console.log("An error occurred:", error);
+                        console.error("Error writing to LED characteristic:", error);
                     });
-            } else {
-                console.log("No characteristic found to disconnect.");
             }
-        } else {
-            // Throw an error if Bluetooth is not connected
-            console.error("Bluetooth is not connected.");
-            window.alert("Bluetooth is not connected.")
         }
-    }
 
-    function getDateTime() {
-        var currentdate = new Date();
-        var day = ("00" + currentdate.getDate()).slice(-2); // Convert day to string and slice
-        var month = ("00" + (currentdate.getMonth() + 1)).slice(-2);
-        var year = currentdate.getFullYear();
-        var hours = ("00" + currentdate.getHours()).slice(-2);
-        var minutes = ("00" + currentdate.getMinutes()).slice(-2);
-        var seconds = ("00" + currentdate.getSeconds()).slice(-2);
+        function disconnectDevice() {
+            if (bleServer && bleServer.connected) {
+                bleServer.disconnect();
+                bleStateContainer.innerHTML = "Device Disconnected";
+                bleStateContainer.style.color = "rgb(209,58,48)";
+            }
+        }
 
-        var datetime = day + "/" + month + "/" + year + " at " + hours + ":" + minutes + ":" + seconds;
-        return datetime;
-    }
+        function getDateTime() {
+            return new Date().toLocaleString();
+        }
 
+        // Crop Info Dataset
+        const crops = {
+            "Rice": { temp: "25-30°C", moisture: "40-60% V/V%" },
+            "Maize": { temp: "20-22°C", moisture: "14-21 V/V%" },
+            "Wheat": { temp: "16-25°C", moisture: "30-36 V/V%" },
+            "Mustard": { temp: "10-18°C", moisture: "18-22 V/V%" },
+            "Large Cardamom": { temp: "15-30°C", moisture: "30-40 V/V%" }
+        };
 
-</script>
+        const cropSelect = document.getElementById("cropSelect");
+        const cropInfo = document.getElementById("cropInfo");
+
+        cropSelect.addEventListener("change", () => {
+            const crop = cropSelect.value;
+            if (crop && crops[crop]) {
+                cropInfo.innerHTML = `<strong>${crop}</strong><br>
+                Optimal Temp: ${crops[crop].temp}<br>
+                Soil Moisture: ${crops[crop].moisture}`;
+            } else {
+                cropInfo.innerHTML = "";
+            }
+        });
+    </script>
+</body>
 
 </html>
